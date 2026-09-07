@@ -95,7 +95,44 @@
             transform: scale(0.95);
         }
 
-        /* Progress Bar */
+        /* Tab Navigation Bar */
+        .tab-nav {
+            display: flex;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-sub);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        /* Progress Card */
         .progress-card {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -230,6 +267,86 @@
             box-shadow: var(--shadow);
         }
 
+        /* Calendar & Stats View */
+        .stats-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .calendar-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .cal-nav-btn {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            text-align: center;
+        }
+
+        .calendar-day-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-sub);
+            padding-bottom: 6px;
+        }
+
+        .calendar-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .calendar-cell.has-attendance {
+            background-color: rgba(16, 185, 129, 0.15);
+            border-color: var(--success);
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .calendar-cell.empty {
+            background: transparent;
+            border: none;
+        }
+
+        .monthly-summary-text {
+            margin-top: 16px;
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            text-align: center;
+            font-weight: 500;
+        }
+
         /* Modal / Settings */
         .modal {
             display: none;
@@ -330,29 +447,64 @@
             </div>
         </header>
 
-        <!-- Progress Card -->
-        <div class="progress-card">
-            <div class="progress-info">
-                <span>오늘의 출석 달성률</span>
-                <span id="progress-text">0 / 0 (0%)</span>
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+            <button class="tab-btn active" id="tab-today-btn" onclick="switchView('today')">📅 오늘의 출석</button>
+            <button class="tab-btn" id="tab-stats-btn" onclick="switchView('stats')">📊 월별 통계</button>
+        </div>
+
+        <!-- VIEW 1: TODAY CHECK -->
+        <div class="view-section active" id="view-today">
+            <!-- Progress Card -->
+            <div class="progress-card">
+                <div class="progress-info">
+                    <span>오늘의 출석 달성률</span>
+                    <span id="progress-text">0 / 0 (0%)</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-fill"></div>
+                </div>
             </div>
-            <div class="progress-bar-bg">
-                <div class="progress-bar-fill" id="progress-fill"></div>
+
+            <!-- Site List -->
+            <div class="site-list" id="site-list-container">
+                <!-- Dynamic sites will be inserted here -->
+            </div>
+
+            <!-- Add New Site Form -->
+            <div class="add-site-container">
+                <h3>➕ 새 출석 사이트 추가</h3>
+                <div class="add-row">
+                    <input type="text" id="new-site-name" class="form-input" placeholder="사이트 이름">
+                    <input type="text" id="new-site-url" class="form-input" placeholder="주소 (https://...)">
+                    <button class="btn-primary" id="add-site-btn" style="flex: 0 0 70px; padding: 10px;">추가</button>
+                </div>
             </div>
         </div>
 
-        <!-- Site List -->
-        <div class="site-list" id="site-list-container">
-            <!-- Dynamic sites will be inserted here -->
-        </div>
-
-        <!-- Add New Site Form -->
-        <div class="add-site-container">
-            <h3>➕ 새 출석 사이트 추가</h3>
-            <div class="add-row">
-                <input type="text" id="new-site-name" class="form-input" placeholder="사이트 이름 (예: 네이버 페이)">
-                <input type="text" id="new-site-url" class="form-input" placeholder="주소 (https://...)">
-                <button class="btn-primary" id="add-site-btn" style="flex: 0 0 70px; padding: 10px;">추가</button>
+        <!-- VIEW 2: MONTHLY STATS & CALENDAR -->
+        <div class="view-section" id="view-stats">
+            <div class="stats-card">
+                <div class="calendar-header">
+                    <button class="cal-nav-btn" onclick="changeMonth(-1)">&lt;</button>
+                    <h3 id="calendar-title">2026년 9월</h3>
+                    <button class="cal-nav-btn" onclick="changeMonth(1)">&gt;</button>
+                </div>
+                <div class="calendar-grid">
+                    <div class="calendar-day-name" style="color: #ef4444;">일</div>
+                    <div class="calendar-day-name">월</div>
+                    <div class="calendar-day-name">화</div>
+                    <div class="calendar-day-name">수</div>
+                    <div class="calendar-day-name">목</div>
+                    <div class="calendar-day-name">금</div>
+                    <div class="calendar-day-name" style="color: #3b82f6;">토</div>
+                </div>
+                <div class="calendar-grid" id="calendar-cells" style="margin-top: 6px;">
+                    <!-- Calendar days rendered dynamically -->
+                </div>
+                <div class="monthly-summary-text" id="monthly-summary-text">
+                    이번 달 총 출석 일수: 0일
+                </div>
             </div>
         </div>
 
@@ -367,14 +519,14 @@
         <div class="modal-content">
             <div class="modal-title">⚙️ GitHub Gist 연동 설정</div>
             <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 14px; line-height: 1.4;">
-                GitHub Gist를 활용하면 PC와 스마트폰 간에 출석체크 기록이 실시간으로 연동됩니다. (토큰 발급 방법은 가이드 참고)
+                GitHub Gist를 활용하면 PC와 스마트폰 간에 출석체크 기록이 실시간으로 연동됩니다.
             </div>
             <div class="form-group">
                 <label for="gist-token">GitHub Personal Access Token (gist 권한)</label>
                 <input type="password" id="gist-token" class="form-input" placeholder="ghp_xxxxxxxxxxxx">
             </div>
             <div class="form-group">
-                <label for="gist-id">Gist ID (비워두면 자동 생성)</label>
+                <label for="gist-id">Gist ID</label>
                 <input type="text" id="gist-id" class="form-input" placeholder="32자리 문자열">
             </div>
             <div class="modal-buttons">
@@ -385,14 +537,14 @@
     </div>
 
     <script>
-        // Default initial sites if none exist
         let sites = JSON.parse(localStorage.getItem('att_sites')) || [
             { id: 1, name: '네이버페이 출석체크', url: 'https://new-m.pay.naver.com/pc/benefit' },
             { id: 2, name: '토스 행운퀴즈 / 출석', url: 'https://toss.im' },
             { id: 3, name: '올리브영 출석체크', url: 'https://www.oliveyoung.co.kr' }
         ];
 
-        // Get today's date string format: YYYY-MM-DD
+        let records = JSON.parse(localStorage.getItem('att_records')) || {};
+
         function getTodayKey() {
             const now = new Date();
             const year = now.getFullYear();
@@ -409,11 +561,79 @@
 
         document.getElementById('current-date-text').textContent = getFormattedDateText();
 
-        // Get attendance records: { "2026-03-30": [1, 2], ... }
-        let records = JSON.parse(localStorage.getItem('att_records')) || {};
         const todayKey = getTodayKey();
         if (!records[todayKey]) {
             records[todayKey] = [];
+        }
+
+        // Calendar navigation state
+        let currentCalendarDate = new Date();
+
+        function switchView(viewName) {
+            document.getElementById('view-today').classList.remove('active');
+            document.getElementById('view-stats').classList.remove('active');
+            document.getElementById('tab-today-btn').classList.remove('active');
+            document.getElementById('tab-stats-btn').classList.remove('active');
+
+            if (viewName === 'today') {
+                document.getElementById('view-today').classList.add('active');
+                document.getElementById('tab-today-btn').classList.add('active');
+            } else {
+                document.getElementById('view-stats').classList.add('active');
+                document.getElementById('tab-stats-btn').classList.add('active');
+                renderCalendar();
+            }
+        }
+
+        function changeMonth(direction) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth(); // 0-11
+            document.getElementById('calendar-title').textContent = `${year}년 ${month + 1}월`;
+
+            const cellsContainer = document.getElementById('calendar-cells');
+            cellsContainer.innerHTML = '';
+
+            const firstDayIndex = new Date(year, month, 1).getDay(); // Day of week for 1st
+            const lastDay = new Date(year, month + 1, 0).getDate(); // Total days in month
+
+            // Empty cells before month starts
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-cell empty';
+                cellsContainer.appendChild(emptyCell);
+            }
+
+            let monthlyAttendanceCount = 0;
+
+            // Days of the month
+            for (let day = 1; day <= lastDay; day++) {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-cell';
+                
+                const mm = String(month + 1).padStart(2, '0');
+                const dd = String(day).padStart(2, '0');
+                const dateKey = `${year}-${mm}-${dd}`;
+
+                cell.textContent = day;
+
+                // Check if there are completed items on this date
+                const checkedList = records[dateKey] || [];
+                // Counted as attendance if at least one site is checked, or if all sites are checked (let's say > 0)
+                if (checkedList.length > 0) {
+                    cell.classList.add('has-attendance');
+                    monthlyAttendanceCount++;
+                }
+
+                cellsContainer.appendChild(cell);
+            }
+
+            document.getElementById('monthly-summary-text').textContent = 
+                `${year}년 ${month + 1}월 총 출석 일수: ${monthlyAttendanceCount}일`;
         }
 
         // Render UI
@@ -444,13 +664,11 @@
                 container.appendChild(card);
             });
 
-            // Update progress bar
             const total = sites.length;
             const percent = total > 0 ? Math.round((completedCount / total) * 100) : 0;
             document.getElementById('progress-text').textContent = `${completedCount} / ${total} (${percent}%)`;
             document.getElementById('progress-fill').style.width = `${percent}%`;
 
-            // Save to localStorage
             localStorage.setItem('att_sites', JSON.stringify(sites));
             localStorage.setItem('att_records', JSON.stringify(records));
         }
@@ -466,7 +684,7 @@
                 records[todayKey].push(siteId);
             }
             render();
-            autoSyncGitHub(); // Try silent sync if token exists
+            autoSyncGitHub();
         }
 
         function deleteSite(siteId, event) {
@@ -477,7 +695,6 @@
             }
         }
 
-        // Add site listener
         document.getElementById('add-site-btn').addEventListener('click', () => {
             const nameInput = document.getElementById('new-site-name');
             const urlInput = document.getElementById('new-site-url');
@@ -504,7 +721,6 @@
             render();
         });
 
-        // Reset today
         document.getElementById('reset-today-btn').addEventListener('click', () => {
             if (confirm('오늘 출석 체크 내역을 초기화하시겠습니까?')) {
                 records[todayKey] = [];
@@ -525,7 +741,7 @@
             localStorage.setItem('att_theme', currentTheme);
         });
 
-        // GitHub Gist Settings Modal
+        // Settings Modal
         const settingsModal = document.getElementById('settings-modal');
         document.getElementById('settings-btn').addEventListener('click', () => {
             document.getElementById('gist-token').value = localStorage.getItem('att_gist_token') || '';
@@ -543,7 +759,7 @@
             localStorage.setItem('att_gist_token', token);
             localStorage.setItem('att_gist_id', gistId);
             settingsModal.classList.remove('open');
-            alert('설정이 저장되었습니다! 이제 깃허브 동기화를 사용하실 수 있습니다.');
+            alert('설정이 저장되었습니다!');
         });
 
         // GitHub Gist Sync Logic
@@ -558,20 +774,13 @@
             }
 
             let gistId = localStorage.getItem('att_gist_id');
-            const dataToSync = {
-                sites: sites,
-                records: records
-            };
-
+            const dataToSync = { sites: sites, records: records };
             const filesData = {
-                "attendance_data.json": {
-                    content: JSON.stringify(dataToSync, null, 2)
-                }
+                "attendance_data.json": { content: JSON.stringify(dataToSync, null, 2) }
             };
 
             try {
                 if (!gistId) {
-                    // Create new Gist
                     const response = await fetch('https://api.github.com/gists', {
                         method: 'POST',
                         headers: {
@@ -593,8 +802,6 @@
                         throw new Error(resJson.message || 'Gist 생성 실패');
                     }
                 } else {
-                    // Update existing Gist (Fetch remote first to merge or overwrite)
-                    // First, let's fetch remote to see if remote is newer or merge records
                     const getRes = await fetch(`https://api.github.com/gists/${gistId}`, {
                         headers: { 'Authorization': `token ${token}` }
                     });
@@ -602,14 +809,11 @@
                         const gistJson = await getRes.json();
                         if (gistJson.files && gistJson.files['attendance_data.json']) {
                             const remoteContent = JSON.parse(gistJson.files['attendance_data.json'].content);
-                            // Merge records (simple approach: union of checked items or take latest)
                             if (remoteContent.records) {
-                                // Merge records keys
                                 for (let dateKey in remoteContent.records) {
                                     if (!records[dateKey]) {
                                         records[dateKey] = remoteContent.records[dateKey];
                                     } else {
-                                        // Merge array elements uniquely
                                         records[dateKey] = Array.from(new Set([...records[dateKey], ...remoteContent.records[dateKey]]));
                                     }
                                 }
@@ -620,7 +824,6 @@
                         }
                     }
 
-                    // Now push updated data back
                     const updateRes = await fetch(`https://api.github.com/gists/${gistId}`, {
                         method: 'PATCH',
                         headers: {
@@ -659,7 +862,6 @@
             }
         }
 
-        // On load, try fetching latest data from GitHub if token & gistId exist
         window.addEventListener('load', () => {
             const token = localStorage.getItem('att_gist_token');
             const gistId = localStorage.getItem('att_gist_id');
