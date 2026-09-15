@@ -166,23 +166,63 @@
             transition: width 0.4s ease;
         }
 
-        /* Site List */
-        .site-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .site-card {
+        /* Group & Site List */
+        .group-section {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 14px;
-            padding: 14px 16px;
+            margin-bottom: 14px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .group-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .group-toggle-icon {
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+        }
+
+        .group-section.collapsed .group-toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .group-section.collapsed .group-body {
+            display: none;
+        }
+
+        .group-body {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px;
+        }
+
+        .site-card {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: var(--shadow);
         }
 
         .site-info {
@@ -194,14 +234,14 @@
         }
 
         .site-checkbox {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             accent-color: var(--success);
             cursor: pointer;
         }
 
         .site-name {
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
         }
 
@@ -212,20 +252,21 @@
 
         .site-actions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
 
         .btn-link {
-            background-color: var(--bg-color);
+            background-color: var(--card-bg);
             color: var(--primary);
             border: 1px solid var(--border-color);
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
             font-weight: 600;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
+            cursor: pointer;
         }
 
         .btn-link:hover {
@@ -326,6 +367,11 @@
             background: var(--bg-color);
             border: 1px solid var(--border-color);
             position: relative;
+            cursor: pointer;
+        }
+
+        .calendar-cell:hover {
+            border-color: var(--primary);
         }
 
         .calendar-cell.has-attendance {
@@ -338,6 +384,7 @@
         .calendar-cell.empty {
             background: transparent;
             border: none;
+            cursor: default;
         }
 
         .monthly-summary-text {
@@ -374,6 +421,8 @@
             width: 100%;
             max-width: 400px;
             box-shadow: var(--shadow);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal-title {
@@ -394,7 +443,7 @@
             color: var(--text-sub);
         }
 
-        .form-input {
+        .form-input, .form-select {
             width: 100%;
             padding: 10px 12px;
             border: 1px solid var(--border-color);
@@ -427,11 +476,13 @@
 
         .add-row {
             display: flex;
+            flex-direction: column;
             gap: 8px;
         }
 
-        .add-row input {
-            flex: 1;
+        .add-row-inputs {
+            display: flex;
+            gap: 6px;
         }
     </style>
 </head>
@@ -440,7 +491,7 @@
         <header>
             <div>
                 <h1>✨ 출석체크</h1>
-                <div class="date-badge" id="current-date-text">2026년 9월 7일 월요일</div>
+                <div class="date-badge" id="current-date-text"></div>
             </div>
             <div class="header-btns">
                 <button class="icon-btn" id="theme-toggle-btn" title="테마 변경">🌙</button>
@@ -467,18 +518,23 @@
                 </div>
             </div>
 
-            <!-- Site List -->
-            <div class="site-list" id="site-list-container">
-                <!-- Dynamic sites will be inserted here -->
+            <!-- Group & Site List Container -->
+            <div id="group-list-container">
+                <!-- Dynamic groups and sites will be inserted here -->
             </div>
 
             <!-- Add New Site Form -->
             <div class="add-site-container">
                 <h3>➕ 새 출석 사이트 추가</h3>
                 <div class="add-row">
-                    <input type="text" id="new-site-name" class="form-input" placeholder="사이트 이름">
-                    <input type="text" id="new-site-url" class="form-input" placeholder="주소 (https://...)">
-                    <button class="btn-primary" id="add-site-btn" style="flex: 0 0 70px; padding: 10px;">추가</button>
+                    <div class="add-row-inputs">
+                        <input type="text" id="new-site-name" class="form-input" placeholder="사이트 이름" style="flex: 1.2;">
+                        <input type="text" id="new-site-group" class="form-input" placeholder="그룹명 (예: 쇼핑, 포인트)" style="flex: 1;">
+                    </div>
+                    <div class="add-row-inputs">
+                        <input type="text" id="new-site-url" class="form-input" placeholder="주소 (https://...)">
+                        <button class="btn-primary" id="add-site-btn" style="flex: 0 0 70px; padding: 10px;">추가</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -506,12 +562,52 @@
                 <div class="monthly-summary-text" id="monthly-summary-text">
                     이번 달 총 출석 일수: 0일
                 </div>
+                <div style="font-size: 0.75rem; color: var(--text-sub); text-align: center; margin-top: 8px;">
+                    * 날짜를 클릭하면 해당 날짜의 출석체크 상세 내역을 보거나 체크할 수 있습니다.
+                </div>
             </div>
         </div>
 
         <div class="action-row">
             <button class="btn-primary" id="sync-github-btn">☁️ 깃허브 동기화</button>
             <button class="btn-secondary" id="reset-today-btn">🔄 오늘 초기화</button>
+        </div>
+    </div>
+
+    <!-- Edit Site Modal -->
+    <div class="modal" id="edit-site-modal">
+        <div class="modal-content">
+            <div class="modal-title">✏️ 사이트 정보 수정</div>
+            <input type="hidden" id="edit-site-id">
+            <div class="form-group">
+                <label for="edit-site-name">사이트 이름</label>
+                <input type="text" id="edit-site-name" class="form-input">
+            </div>
+            <div class="form-group">
+                <label for="edit-site-group">그룹명</label>
+                <input type="text" id="edit-site-group" class="form-input">
+            </div>
+            <div class="form-group">
+                <label for="edit-site-url">주소 (URL)</label>
+                <input type="text" id="edit-site-url" class="form-input">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-secondary" id="edit-modal-close-btn" style="flex: 1;">취소</button>
+                <button class="btn-primary" id="edit-modal-save-btn" style="flex: 1;">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Detail / Check Modal -->
+    <div class="modal" id="date-detail-modal">
+        <div class="modal-content">
+            <div class="modal-title" id="date-detail-title">2026-09-07 상세 정보</div>
+            <div id="date-detail-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto;">
+                <!-- Dynamically loaded list of sites for this date -->
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-primary" id="date-detail-close-btn" style="width: 100%;">닫기</button>
+            </div>
         </div>
     </div>
 
@@ -539,12 +635,13 @@
 
     <script>
         let sites = JSON.parse(localStorage.getItem('att_sites')) || [
-            { id: 1, name: '네이버페이 출석체크', url: 'https://new-m.pay.naver.com/pc/benefit' },
-            { id: 2, name: '토스 행운퀴즈 / 출석', url: 'https://toss.im' },
-            { id: 3, name: '올리브영 출석체크', url: 'https://www.oliveyoung.co.kr' }
+            { id: 1, name: '네이버페이 출석체크', group: '포인트', url: 'https://new-m.pay.naver.com/pc/benefit' },
+            { id: 2, name: '토스 행운퀴즈 / 출석', group: '포인트', url: 'https://toss.im' },
+            { id: 3, name: '올리브영 출석체크', group: '쇼핑', url: 'https://www.oliveyoung.co.kr' }
         ];
 
         let records = JSON.parse(localStorage.getItem('att_records')) || {};
+        let collapsedGroups = JSON.parse(localStorage.getItem('att_collapsed_groups')) || {};
 
         function getTodayKey() {
             const now = new Date();
@@ -567,7 +664,6 @@
             records[todayKey] = [];
         }
 
-        // Calendar navigation state
         let currentCalendarDate = new Date();
 
         function switchView(viewName) {
@@ -599,10 +695,9 @@
             const cellsContainer = document.getElementById('calendar-cells');
             cellsContainer.innerHTML = '';
 
-            const firstDayIndex = new Date(year, month, 1).getDay(); // Day of week for 1st
-            const lastDay = new Date(year, month + 1, 0).getDate(); // Total days in month
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const lastDay = new Date(year, month + 1, 0).getDate();
 
-            // Empty cells before month starts
             for (let i = 0; i < firstDayIndex; i++) {
                 const emptyCell = document.createElement('div');
                 emptyCell.className = 'calendar-cell empty';
@@ -611,7 +706,6 @@
 
             let monthlyAttendanceCount = 0;
 
-            // Days of the month
             for (let day = 1; day <= lastDay; day++) {
                 const cell = document.createElement('div');
                 cell.className = 'calendar-cell';
@@ -622,13 +716,13 @@
 
                 cell.textContent = day;
 
-                // Check if there are completed items on this date
                 const checkedList = records[dateKey] || [];
-                // Counted as attendance if at least one site is checked, or if all sites are checked (let's say > 0)
                 if (checkedList.length > 0) {
                     cell.classList.add('has-attendance');
                     monthlyAttendanceCount++;
                 }
+
+                cell.addEventListener('click', () => openDateDetailModal(dateKey));
 
                 cellsContainer.appendChild(cell);
             }
@@ -639,33 +733,70 @@
 
         // Render UI
         function render() {
-            const container = document.getElementById('site-list-container');
+            const container = document.getElementById('group-list-container');
             container.innerHTML = '';
 
             const todayCheckedList = records[todayKey] || [];
             let completedCount = 0;
+            const total = sites.length;
 
+            // Group sites by group name
+            const grouped = {};
             sites.forEach(site => {
-                const isChecked = todayCheckedList.includes(site.id);
-                if (isChecked) completedCount++;
-
-                const card = document.createElement('div');
-                card.className = `site-card ${isChecked ? 'completed' : ''}`;
-                
-                card.innerHTML = `
-                    <div class="site-info" onclick="toggleCheck(${site.id})">
-                        <input type="checkbox" class="site-checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheck(${site.id})">
-                        <span class="site-name">${site.name}</span>
-                    </div>
-                    <div class="site-actions">
-                        <a href="${site.url}" target="_blank" class="btn-link" onclick="event.stopPropagation();">바로가기 ↗</a>
-                        <button class="btn-link" style="color: #ef4444; border-color: #fecaca; background: transparent;" onclick="deleteSite(${site.id}, event)" title="삭제">삭제</button>
-                    </div>
-                `;
-                container.appendChild(card);
+                const groupName = site.group || '기타';
+                if (!grouped[groupName]) grouped[groupName] = [];
+                grouped[groupName].push(site);
             });
 
-            const total = sites.length;
+            Object.keys(grouped).forEach(groupName => {
+                const groupSites = grouped[groupName];
+                const isCollapsed = !!collapsedGroups[groupName];
+
+                const groupSection = document.createElement('div');
+                groupSection.className = `group-section ${isCollapsed ? 'collapsed' : ''}`;
+
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'group-header';
+                groupHeader.innerHTML = `
+                    <div class="group-title">
+                        <span class="group-toggle-icon">▼</span>
+                        <span>${groupName} (${groupSites.length})</span>
+                    </div>
+                `;
+                groupHeader.addEventListener('click', () => {
+                    collapsedGroups[groupName] = !isCollapsed;
+                    localStorage.setItem('att_collapsed_groups', JSON.stringify(collapsedGroups));
+                    render();
+                });
+
+                const groupBody = document.createElement('div');
+                groupBody.className = 'group-body';
+
+                groupSites.forEach(site => {
+                    const isChecked = todayCheckedList.includes(site.id);
+                    if (isChecked) completedCount++;
+
+                    const card = document.createElement('div');
+                    card.className = `site-card ${isChecked ? 'completed' : ''}`;
+                    card.innerHTML = `
+                        <div class="site-info" onclick="toggleCheck(${site.id}, '${todayKey}')">
+                            <input type="checkbox" class="site-checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheck(${site.id}, '${todayKey}')">
+                            <span class="site-name">${site.name}</span>
+                        </div>
+                        <div class="site-actions">
+                            <a href="${site.url}" target="_blank" class="btn-link" onclick="event.stopPropagation();">바로가기 ↗</a>
+                            <button class="btn-link" style="color: var(--primary);" onclick="openEditModal(${site.id}, event)" title="수정">수정</button>
+                            <button class="btn-link" style="color: #ef4444; border-color: #fecaca; background: transparent;" onclick="deleteSite(${site.id}, event)" title="삭제">삭제</button>
+                        </div>
+                    `;
+                    groupBody.appendChild(card);
+                });
+
+                groupSection.appendChild(groupHeader);
+                groupSection.appendChild(groupBody);
+                container.appendChild(groupSection);
+            });
+
             const percent = total > 0 ? Math.round((completedCount / total) * 100) : 0;
             document.getElementById('progress-text').textContent = `${completedCount} / ${total} (${percent}%)`;
             document.getElementById('progress-fill').style.width = `${percent}%`;
@@ -674,18 +805,20 @@
             localStorage.setItem('att_records', JSON.stringify(records));
         }
 
-        function toggleCheck(siteId) {
-            if (!records[todayKey]) {
-                records[todayKey] = [];
+        function toggleCheck(siteId, dateKey = todayKey) {
+            if (!records[dateKey]) {
+                records[dateKey] = [];
             }
-            const index = records[todayKey].indexOf(siteId);
+            const index = records[dateKey].indexOf(siteId);
             if (index > -1) {
-                records[todayKey].splice(index, 1);
+                records[dateKey].splice(index, 1);
             } else {
-                records[todayKey].push(siteId);
+                records[dateKey].push(siteId);
             }
             render();
-            autoSyncGitHub();
+            if (dateKey === todayKey) {
+                autoSyncGitHub();
+            }
         }
 
         function deleteSite(siteId, event) {
@@ -696,10 +829,13 @@
             }
         }
 
+        // Add site
         document.getElementById('add-site-btn').addEventListener('click', () => {
             const nameInput = document.getElementById('new-site-name');
+            const groupInput = document.getElementById('new-site-group');
             const urlInput = document.getElementById('new-site-url');
             const name = nameInput.value.trim();
+            const group = groupInput.value.trim() || '기타';
             let url = urlInput.value.trim();
 
             if (!name) {
@@ -713,13 +849,89 @@
             const newSite = {
                 id: Date.now(),
                 name: name,
+                group: group,
                 url: url || '#'
             };
 
             sites.push(newSite);
             nameInput.value = '';
+            groupInput.value = '';
             urlInput.value = '';
             render();
+        });
+
+        // Edit site modal
+        const editSiteModal = document.getElementById('edit-site-modal');
+        function openEditModal(siteId, event) {
+            event.stopPropagation();
+            const site = sites.find(s => s.id === siteId);
+            if (!site) return;
+
+            document.getElementById('edit-site-id').value = site.id;
+            document.getElementById('edit-site-name').value = site.name;
+            document.getElementById('edit-site-group').value = site.group || '기타';
+            document.getElementById('edit-site-url').value = site.url;
+            editSiteModal.classList.add('open');
+        }
+
+        document.getElementById('edit-modal-close-btn').addEventListener('click', () => {
+            editSiteModal.classList.remove('open');
+        });
+
+        document.getElementById('edit-modal-save-btn').addEventListener('click', () => {
+            const siteId = Number(document.getElementById('edit-site-id').value);
+            const name = document.getElementById('edit-site-name').value.trim();
+            const group = document.getElementById('edit-site-group').value.trim() || '기타';
+            let url = document.getElementById('edit-site-url').value.trim();
+
+            if (!name) {
+                alert('사이트 이름을 입력해주세요.');
+                return;
+            }
+            if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+
+            const site = sites.find(s => s.id === siteId);
+            if (site) {
+                site.name = name;
+                site.group = group;
+                site.url = url || '#';
+            }
+
+            editSiteModal.classList.remove('open');
+            render();
+            autoSyncGitHub();
+        });
+
+        // Date Detail / Check Modal
+        const dateDetailModal = document.getElementById('date-detail-modal');
+        function openDateDetailModal(dateKey) {
+            document.getElementById('date-detail-title').textContent = `${dateKey} 출석체크 상세`;
+            const listContainer = document.getElementById('date-detail-list');
+            listContainer.innerHTML = '';
+
+            const checkedSites = records[dateKey] || [];
+
+            sites.forEach(site => {
+                const isChecked = checkedSites.includes(site.id);
+                const item = document.createElement('div');
+                item.className = `site-card ${isChecked ? 'completed' : ''}`;
+                item.innerHTML = `
+                    <div class="site-info" onclick="toggleCheck(${site.id}, '${dateKey}'); openDateDetailModal('${dateKey}');">
+                        <input type="checkbox" class="site-checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheck(${site.id}, '${dateKey}'); openDateDetailModal('${dateKey}');">
+                        <span class="site-name">${site.name} <small style="color:var(--text-sub);">[${site.group || '기타'}]</small></span>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+
+            dateDetailModal.classList.add('open');
+        }
+
+        document.getElementById('date-detail-close-btn').addEventListener('click', () => {
+            dateDetailModal.classList.remove('open');
+            renderCalendar();
         });
 
         document.getElementById('reset-today-btn').addEventListener('click', () => {
@@ -775,7 +987,7 @@
             }
 
             let gistId = localStorage.getItem('att_gist_id');
-            const dataToSync = { sites: sites, records: records };
+            const dataToSync = { sites: sites, records: records, collapsedGroups: collapsedGroups };
             const filesData = {
                 "attendance_data.json": { content: JSON.stringify(dataToSync, null, 2) }
             };
@@ -819,8 +1031,11 @@
                                     }
                                 }
                             }
-                            if (remoteContent.sites && remoteContent.sites.length > sites.length) {
+                            if (remoteContent.sites && remoteContent.sites.length > 0) {
                                 sites = remoteContent.sites;
+                            }
+                            if (remoteContent.collapsedGroups) {
+                                collapsedGroups = remoteContent.collapsedGroups;
                             }
                         }
                     }
@@ -835,7 +1050,7 @@
                             description: "Attendance Check Data Storage",
                             files: {
                                 "attendance_data.json": {
-                                    content: JSON.stringify({ sites, records }, null, 2)
+                                    content: JSON.stringify({ sites, records, collapsedGroups }, null, 2)
                                 }
                             }
                         })
@@ -875,6 +1090,7 @@
                     if (data.files && data.files['attendance_data.json']) {
                         const remote = JSON.parse(data.files['attendance_data.json'].content);
                         if (remote.sites) sites = remote.sites;
+                        if (remote.collapsedGroups) collapsedGroups = remote.collapsedGroups;
                         if (remote.records) {
                             for (let k in remote.records) {
                                 if (!records[k]) records[k] = remote.records[k];
