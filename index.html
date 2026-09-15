@@ -178,13 +178,19 @@
 
         .group-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
             padding: 12px 16px;
             background: var(--bg-color);
             border-bottom: 1px solid var(--border-color);
             cursor: pointer;
             user-select: none;
+            gap: 6px;
+        }
+
+        .group-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .group-title {
@@ -193,6 +199,27 @@
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+
+        .group-stats-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-sub);
+        }
+
+        .group-progress-bg {
+            width: 100%;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .group-progress-fill {
+            height: 100%;
+            background-color: var(--success);
+            width: 0%;
+            transition: width 0.4s ease;
         }
 
         .group-toggle-icon {
@@ -510,7 +537,7 @@
             <!-- Progress Card -->
             <div class="progress-card">
                 <div class="progress-info">
-                    <span>오늘의 출석 달성률</span>
+                    <span>오늘의 전체 출석 달성률</span>
                     <span id="progress-text">0 / 0 (0%)</span>
                 </div>
                 <div class="progress-bar-bg">
@@ -752,15 +779,32 @@
                 const groupSites = grouped[groupName];
                 const isCollapsed = !!collapsedGroups[groupName];
 
+                // Calculate group completion
+                let groupCompletedCount = 0;
+                groupSites.forEach(site => {
+                    if (todayCheckedList.includes(site.id)) {
+                        groupCompletedCount++;
+                        completedCount++;
+                    }
+                });
+                const groupTotal = groupSites.length;
+                const groupPercent = groupTotal > 0 ? Math.round((groupCompletedCount / groupTotal) * 100) : 0;
+
                 const groupSection = document.createElement('div');
                 groupSection.className = `group-section ${isCollapsed ? 'collapsed' : ''}`;
 
                 const groupHeader = document.createElement('div');
                 groupHeader.className = 'group-header';
                 groupHeader.innerHTML = `
-                    <div class="group-title">
-                        <span class="group-toggle-icon">▼</span>
-                        <span>${groupName} (${groupSites.length})</span>
+                    <div class="group-header-top">
+                        <div class="group-title">
+                            <span class="group-toggle-icon">▼</span>
+                            <span>${groupName}</span>
+                        </div>
+                        <span class="group-stats-text">${groupCompletedCount} / ${groupTotal} (${groupPercent}%)</span>
+                    </div>
+                    <div class="group-progress-bg">
+                        <div class="group-progress-fill" style="width: ${groupPercent}%;"></div>
                     </div>
                 `;
                 groupHeader.addEventListener('click', () => {
@@ -774,7 +818,6 @@
 
                 groupSites.forEach(site => {
                     const isChecked = todayCheckedList.includes(site.id);
-                    if (isChecked) completedCount++;
 
                     const card = document.createElement('div');
                     card.className = `site-card ${isChecked ? 'completed' : ''}`;
@@ -977,7 +1020,7 @@
             alert('설정이 저장되었습니다!');
         });
 
-        // GitHub Gist Sync Logic (수정된 부분)
+        // GitHub Gist Sync Logic
         async function syncWithGitHub(isManual = true) {
             const token = localStorage.getItem('att_gist_token');
             if (!token) {
@@ -1017,7 +1060,6 @@
                         throw new Error(resJson.message || 'Gist 생성 실패');
                     }
                 } else {
-                    // 서버에서 데이터로 덮어쓰던 GET 로직 제거 후 바로 PATCH (로컬 데이터 우선 반영)
                     const updateRes = await fetch(`https://api.github.com/gists/${gistId}`, {
                         method: 'PATCH',
                         headers: {
