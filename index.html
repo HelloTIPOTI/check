@@ -858,6 +858,7 @@
             groupInput.value = '';
             urlInput.value = '';
             render();
+            autoSyncGitHub();
         });
 
         // Edit site modal
@@ -938,6 +939,7 @@
             if (confirm('오늘 출석 체크 내역을 초기화하시겠습니까?')) {
                 records[todayKey] = [];
                 render();
+                autoSyncGitHub();
             }
         });
 
@@ -975,7 +977,7 @@
             alert('설정이 저장되었습니다!');
         });
 
-        // GitHub Gist Sync Logic
+        // GitHub Gist Sync Logic (수정된 부분)
         async function syncWithGitHub(isManual = true) {
             const token = localStorage.getItem('att_gist_token');
             if (!token) {
@@ -1015,31 +1017,7 @@
                         throw new Error(resJson.message || 'Gist 생성 실패');
                     }
                 } else {
-                    const getRes = await fetch(`https://api.github.com/gists/${gistId}`, {
-                        headers: { 'Authorization': `token ${token}` }
-                    });
-                    if (getRes.ok) {
-                        const gistJson = await getRes.json();
-                        if (gistJson.files && gistJson.files['attendance_data.json']) {
-                            const remoteContent = JSON.parse(gistJson.files['attendance_data.json'].content);
-                            if (remoteContent.records) {
-                                for (let dateKey in remoteContent.records) {
-                                    if (!records[dateKey]) {
-                                        records[dateKey] = remoteContent.records[dateKey];
-                                    } else {
-                                        records[dateKey] = Array.from(new Set([...records[dateKey], ...remoteContent.records[dateKey]]));
-                                    }
-                                }
-                            }
-                            if (remoteContent.sites && remoteContent.sites.length > 0) {
-                                sites = remoteContent.sites;
-                            }
-                            if (remoteContent.collapsedGroups) {
-                                collapsedGroups = remoteContent.collapsedGroups;
-                            }
-                        }
-                    }
-
+                    // 서버에서 데이터로 덮어쓰던 GET 로직 제거 후 바로 PATCH (로컬 데이터 우선 반영)
                     const updateRes = await fetch(`https://api.github.com/gists/${gistId}`, {
                         method: 'PATCH',
                         headers: {
@@ -1057,7 +1035,6 @@
                     });
 
                     if (updateRes.ok) {
-                        render();
                         if (isManual) alert('깃허브 동기화 완료!');
                     } else {
                         throw new Error('Gist 업데이트 실패');
