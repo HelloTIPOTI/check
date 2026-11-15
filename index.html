@@ -228,6 +228,26 @@
             transition: transform 0.2s;
         }
 
+        .drag-handle {
+            cursor: grab;
+            touch-action: none;
+            color: var(--text-sub);
+            font-size: 1rem;
+            padding: 0 6px 0 2px;
+            user-select: none;
+        }
+
+        .group-section.dragging {
+            opacity: 0.6;
+            border-color: var(--primary);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        body.is-dragging, body.is-dragging * {
+            cursor: grabbing !important;
+            user-select: none;
+        }
+
         .group-section.collapsed .group-toggle-icon {
             transform: rotate(-90deg);
         }
@@ -546,6 +566,10 @@
                 </div>
             </div>
 
+            <div class="action-row" style="margin-bottom: 12px;">
+                <button class="btn-secondary" id="sort-completed-btn" style="flex: 1; padding: 10px;">✅ 완료 그룹 위로 정렬</button>
+            </div>
+
             <!-- Group & Site List Container -->
             <div id="group-list-container">
                 <!-- Dynamic groups and sites will be inserted here -->
@@ -670,6 +694,80 @@
 
         let records = JSON.parse(localStorage.getItem('att_records')) || {};
         let collapsedGroups = JSON.parse(localStorage.getItem('att_collapsed_groups')) || {};
+        let groupOrder = JSON.parse(localStorage.getItem('att_group_order')) || [];
+
+        // 저장된 순서를 기준으로 현재 존재하는 그룹명 정렬 (새 그룹은 맨 뒤)
+        function getOrderedGroupNames(grouped) {
+            const names = Object.keys(grouped);
+            const ordered = groupOrder.filter(n => names.includes(n));
+            names.forEach(n => { if (!ordered.includes(n)) ordered.push(n); });
+            groupOrder = ordered;
+            return ordered;
+        }
+
+        function saveGroupOrder() {
+            localStorage.setItem('att_group_order', JSON.stringify(groupOrder));
+            autoSyncGitHub();
+        }
+
+        // 100% 달성 그룹을 위로, 미달성 그룹은 아래로 (달성률 높은 순, 같으면 기존 순서 유지)
+        function sortCompletedFirst() {
+            const checked = records[todayKey] || [];
+            const stat = {};
+            sites.forEach(s => {
+                const g = s.group || '기타';
+                if (!stat[g]) stat[g] = { done: 0, total: 0 };
+                stat[g].total++;
+                if (checked.includes(s.id)) stat[g].done++;
+            });
+            const rate = g => stat[g].total ? stat[g].done / stat[g].total : 0;
+            const base = groupOrder.filter(g => stat[g]);
+            Object.keys(stat).forEach(g => { if (!base.includes(g)) base.push(g); });
+            groupOrder = base
+                .map((g, i) => ({ g, i }))
+                .sort((a, b) => (rate(b.g) === 1) - (rate(a.g) === 1) || rate(b.g) - rate(a.g) || a.i - b.i)
+                .map(o => o.g);
+            saveGroupOrder();
+            render();
+        }
+
+        // 마우스/터치로 그룹 순서 드래그
+        function startGroupDrag(e, section) {
+            e.preventDefault();
+            const container = document.getElementById('group-list-container');
+            section.classList.add('dragging');
+            document.body.classList.add('is-dragging');
+
+            const onMove = (ev) => {
+                const siblings = [...container.querySelectorAll('.group-section')].filter(s => s !== section);
+                let target = null;
+                for (const s of siblings) {
+                    const r = s.getBoundingClientRect();
+                    if (ev.clientY < r.top + r.height / 2) { target = s; break; }
+                }
+                if (target) container.insertBefore(section, target);
+                else container.appendChild(section);
+
+                // 화면 가장자리 근처에서 자동 스크롤
+                if (ev.clientY < 60) window.scrollBy(0, -12);
+                else if (ev.clientY > window.innerHeight - 60) window.scrollBy(0, 12);
+            };
+
+            const onUp = () => {
+                document.removeEventListener('pointermove', onMove);
+                document.removeEventListener('pointerup', onUp);
+                document.removeEventListener('pointercancel', onUp);
+                section.classList.remove('dragging');
+                document.body.classList.remove('is-dragging');
+                groupOrder = [...container.querySelectorAll('.group-section')].map(s => s.dataset.group);
+                saveGroupOrder();
+                render();
+            };
+
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+            document.addEventListener('pointercancel', onUp);
+        }
 
         function getTodayKey() {
             const now = new Date();
@@ -776,7 +874,7 @@
                 grouped[groupName].push(site);
             });
 
-            Object.keys(grouped).forEach(groupName => {
+            getOrderedGroupNames(grouped).forEach(groupName => {
                 const groupSites = grouped[groupName];
                 const isCollapsed = !!collapsedGroups[groupName];
 
@@ -793,12 +891,14 @@
 
                 const groupSection = document.createElement('div');
                 groupSection.className = `group-section ${isCollapsed ? 'collapsed' : ''}`;
+                groupSection.dataset.group = groupName;
 
                 const groupHeader = document.createElement('div');
                 groupHeader.className = 'group-header';
                 groupHeader.innerHTML = `
                     <div class="group-header-top">
                         <div class="group-title">
+                            <span class="drag-handle" title="드래그해서 순서 변경">⠿</span>
                             <span class="group-toggle-icon">▼</span>
                             <span>${groupName}</span>
                         </div>
@@ -808,6 +908,10 @@
                         <div class="group-progress-fill" style="width: ${groupPercent}%;"></div>
                     </div>
                 `;
+                const handle = groupHeader.querySelector('.drag-handle');
+                handle.addEventListener('pointerdown', (e) => startGroupDrag(e, groupSection));
+                handle.addEventListener('click', (e) => e.stopPropagation());
+
                 groupHeader.addEventListener('click', () => {
                     collapsedGroups[groupName] = !isCollapsed;
                     localStorage.setItem('att_collapsed_groups', JSON.stringify(collapsedGroups));
@@ -1033,7 +1137,7 @@
             }
 
             let gistId = localStorage.getItem('att_gist_id');
-            const dataToSync = { sites: sites, records: records, collapsedGroups: collapsedGroups };
+            const dataToSync = { sites: sites, records: records, collapsedGroups: collapsedGroups, groupOrder: groupOrder };
             const filesData = {
                 "attendance_data.json": { content: JSON.stringify(dataToSync, null, 2) }
             };
@@ -1071,7 +1175,7 @@
                             description: "Attendance Check Data Storage",
                             files: {
                                 "attendance_data.json": {
-                                    content: JSON.stringify({ sites, records, collapsedGroups }, null, 2)
+                                    content: JSON.stringify({ sites, records, collapsedGroups, groupOrder }, null, 2)
                                 }
                             }
                         })
@@ -1089,6 +1193,7 @@
             }
         }
 
+        document.getElementById('sort-completed-btn').addEventListener('click', sortCompletedFirst);
         document.getElementById('sync-github-btn').addEventListener('click', () => syncWithGitHub(true));
 
         function autoSyncGitHub() {
@@ -1111,6 +1216,7 @@
                         const remote = JSON.parse(data.files['attendance_data.json'].content);
                         if (remote.sites) sites = remote.sites;
                         if (remote.collapsedGroups) collapsedGroups = remote.collapsedGroups;
+                        if (remote.groupOrder) groupOrder = remote.groupOrder;
                         if (remote.records) {
                             for (let k in remote.records) {
                                 if (!records[k]) records[k] = remote.records[k];
